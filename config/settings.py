@@ -10,3 +10,4 @@ chromedriver_autoinstaller.install()
 
 # Configurações globais
 GOOGLE_URL = "https://www.google.com"
+WHATSAPP_URL = "https://web.whatsapp.com/"
