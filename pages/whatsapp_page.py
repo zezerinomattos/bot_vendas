@@ -60,6 +60,9 @@ class WhatsAppPage:
         popup = tk.Toplevel(self.root)
         popup.title("Enviar Mensagem")
 
+        # Configurar o popup para estar sempre no topo
+        popup.attributes("-topmost", True)
+
         # Centralizar o popup
         popup_width = 500
         popup_height = 600

@@ -30,7 +30,6 @@ class WhatsAppMessageService:
 
         try:
             driver.get(WHATSAPP_URL)
-            print("Acessando o WhatsApp Web...")
             return driver
         except Exception as e:
             print(f"Erro ao abrir o WhatsApp Web: {e}")
@@ -39,7 +38,6 @@ class WhatsAppMessageService:
     def wait_for_qr_code(self, driver):
         """Espera o QR Code carregar na tela"""
         try:
-            print("Aguardando o QR Code aparecer...")
             WebDriverWait(driver, 30).until(
                 EC.presence_of_element_located(
                     (By.XPATH,
@@ -54,14 +52,12 @@ class WhatsAppMessageService:
     def wait_for_chat_list(self, driver):
         """Espera a barra de conversas carregar na tela"""
         try:
-            print("Aguardando a barra de conversas aparecer...")
             WebDriverWait(driver, 30).until(
                 EC.presence_of_element_located(
                     (By.XPATH,
                      '//*[@id="app"]/div/div[3]/div/div[3]/header/header')
                 )
             )
-            print("Barra de conversas detectada!")
         except Exception as e:
             print(f"Erro ao esperar a barra de conversas: {e}")
 
@@ -75,14 +71,12 @@ class WhatsAppMessageService:
                                             '[data-icon="new-chat-outline"]'))
             )
             new_chat_button.click()
-            print("Botão de novo chat clicado!")
         except Exception as e:
             print(f"Erro ao clicar no botão de novo chat: {e}")
 
     def enter_phone_number(self, driver, phone_number):
         """Insere o número de telefone no campo de input"""
         try:
-            print(f"Digitando o número de telefone: {phone_number}")
             phone_input = WebDriverWait(driver, 30).until(
                 EC.presence_of_element_located(
                     (By.XPATH,
@@ -92,10 +86,7 @@ class WhatsAppMessageService:
             )
             phone_input.click()
             phone_input.send_keys(phone_number)
-            print("Número de telefone digitado!")
             time.sleep(1)  # Aguardar 1 segundo
-
-            print("Aqui dentro vai ser a sequência do código.")
 
             # Esperar o contato aparecer após digitar o número
             time.sleep(2)  # Aguardar que o contato apareça
@@ -110,16 +101,27 @@ class WhatsAppMessageService:
             # Obter o título (número de telefone) da div
             contact_number = contact_div.find_element(
                 By.TAG_NAME, "span").get_attribute("title")
-            print(f"Contato encontrado: {contact_number}")
 
             # Comparar os últimos 4 dígitos
             if phone_number[-4:] in contact_number:
                 contact_div.click()  # Clica no contato
+                return True  # Número processado com sucesso
             else:
                 print(f"Número {phone_number[-4:]} não encontrado.")
+                clear_input = WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, '//*[@id="app"]/div/div[3]/div/div[2]/'
+                            'div[1]/span/div/span/div/div[1]/div[2]/'
+                            'span/button/span')
+                    )
+                )
+                clear_input.click()
+
+                return False  # Número não encontrado
 
         except Exception as e:
             print(f"Erro ao digitar ou limpar o número de telefone: {e}")
+            return False  # Número não encontrado
 
     def write_message(self,
                       driver,
@@ -129,35 +131,41 @@ class WhatsAppMessageService:
                       img_media=None):
         """Escreve a mensagem no campo de mensagem e envia"""
         try:
-            print(f"Escrevendo a mensagem: {message}")
-            time.sleep(3)
-            
-            # Re-localizar o campo de mensagem
-            message_field = WebDriverWait(driver, 30).until(
-                EC.presence_of_element_located(
-                    (By.XPATH,
-                     '//*[@id="main"]/footer/div[1]/div/span/'
-                     'div/div[2]/div[1]/div[2]/div[1]/p')
-                )
-            )
+            if message:
+                try:
+                    time.sleep(3)
 
-            message_field.click()  # Clicar no campo de mensagem
+                    # Re-localizar o campo de mensagem
+                    message_field = WebDriverWait(driver, 30).until(
+                        EC.presence_of_element_located(
+                            (By.XPATH,
+                                '//*[@id="main"]/footer/div[1]/div/span/'
+                                'div/div[2]/div[1]/div[2]/div[1]/p')
+                        )
+                    )
 
-            # Digitar a mensagem lentamente (greeting)
-            for char in message:
-                message_field.send_keys(char)
-                time.sleep(random.uniform(0.05, 0.2))  # Intervalo aleatório
-            print("Mensagem de saudação escrita com sucesso!")
+                    message_field.click()  # Clicar no campo de mensagem
 
-            # Re-localizar o botão de enviar e clicar
-            send_button = WebDriverWait(driver, 30).until(
-                EC.element_to_be_clickable(
-                    (By.XPATH,
-                     "//button[@aria-label='Enviar' and @data-tab='11']")
-                )
-            )
-            send_button.click()  # Clica no botão de envio
-            print("Mensagem de saudação enviada com sucesso!")
+                    # Digitar a mensagem lentamente (greeting)
+                    for char in message:
+                        message_field.send_keys(char)
+                        time.sleep(random.uniform(0.05, 0.2))  # Intervalo
+                    print("Mensagem de saudação escrita com sucesso!")
+
+                    # Re-localizar o botão de enviar e clicar
+                    send_button = WebDriverWait(driver, 30).until(
+                        EC.element_to_be_clickable(
+                            (By.XPATH,
+                                "//button[@aria-label='Enviar'"
+                                "and @data-tab='11']")
+                        )
+                    )
+                    send_button.click()  # Clica no botão de envio
+                    print("Mensagem de saudação enviada com sucesso!")
+
+                except Exception as e:
+                    print(f"Erro ao carregar a Saudação: {e}")
+                    driver.quit()  # Fecha o navegador
 
             # Verificar se existe mensagem em conversion
             if conversion:
@@ -193,86 +201,14 @@ class WhatsAppMessageService:
             else:
                 print("Nenhuma mensagem de conversão encontrada.")
 
-            # Verificar se existe áudio em audio
             if audio:
-                try:
-                    time.sleep(6)
-                    # clicar no primeiro botão (SVG com data-icon="plus")
-                    first_button = WebDriverWait(driver, 30).until(
-                        EC.element_to_be_clickable(
-                            (By.XPATH, '//span[@data-icon="plus"]'))
-                    )
-                    first_button.click()
-                    print("Primeiro botão clicado com sucesso!")
-                    time.sleep(1)
+                time.sleep(6)
+                self.upload_file(driver, audio)
 
-                    # Localizar o input do tipo file
-                    print("Tentando localizar o input do tipo 'file'...")
-                    file_input = WebDriverWait(driver, 30).until(
-                        EC.presence_of_element_located(
-                            (By.XPATH,
-                             '//*[@id="app"]/div/span[5]/div/ul/'
-                             'div/div/div[2]/li/div/input'))
-                    )
-                    print("Input localizado com sucesso!")
-
-                    # Enviar o caminho do arquivo para o input
-                    print("Enviando o arquivo para upload...")
-                    file_input.send_keys(audio)
-                    print("Arquivo enviado com sucesso!")
-                    time.sleep(2)
-
-                    file_input = WebDriverWait(driver, 30).until(
-                        EC.presence_of_element_located(
-                            (By.XPATH,
-                             '//*[@id="app"]/div/div[3]/div/div[2]/div[2]/'
-                             'span/div/div/div/div[2]/div/div[2]/div[2]/'
-                             'div/div'))
-                    )
-                    file_input.click()  # Clica no botão de envio
-
-                except Exception as e:
-                    print(f"Erro ao clicar nos botões: {e}")
-            else:
-                print("Nenhum arquivo de áudio foi fornecido.")
-
-            # Verificar se existe imagem em img_media
             if img_media:
                 try:
-                    # Localizar o input do tipo file para imagens
                     time.sleep(6)
-                    # clicar no primeiro botão (SVG com data-icon="plus")
-                    first_button = WebDriverWait(driver, 30).until(
-                        EC.element_to_be_clickable(
-                            (By.XPATH, '//span[@data-icon="plus"]'))
-                    )
-                    first_button.click()
-                    print("Primeiro botão clicado com sucesso!")
-                    time.sleep(1)
-
-                    # Localizar o input do tipo file
-                    print("Tentando localizar o input do tipo 'file'...")
-                    file_input = WebDriverWait(driver, 30).until(
-                        EC.presence_of_element_located(
-                            (By.XPATH, '//*[@id="app"]/div/span[5]/div/ul/'
-                             'div/div/div[2]/li/div/input'))
-                    )
-                    print("Input localizado com sucesso!")
-
-                    # Enviar o caminho do arquivo para o input
-                    print("Enviando o arquivo para upload...")
-                    file_input.send_keys(img_media)
-                    print("Arquivo enviado com sucesso!")
-                    time.sleep(2)
-
-                    file_input = WebDriverWait(driver, 30).until(
-                        EC.presence_of_element_located(
-                            (By.XPATH,
-                             '//*[@id="app"]/div/div[3]/div/div[2]/div[2]/'
-                             'span/div/div/div/div[2]/div/div[2]/div[2]/'
-                             'div/div'))
-                    )
-                    file_input.click()  # Clica no botão de envio
+                    self.upload_file(driver, img_media)
 
                 except Exception as e:
                     print(f"Erro ao carregar a imagem: {e}")
@@ -280,6 +216,43 @@ class WhatsAppMessageService:
 
         except Exception as e:
             print(f"Erro ao escrever ou enviar a mensagem: {e}")
+
+    def upload_file(self, driver, file_path):
+        """Faz o upload de um arquivo (áudio ou imagem)"""
+        try:
+            time.sleep(6)
+            # Clicar no botão de anexar (ícone de "+")
+            attach_button = WebDriverWait(driver, 30).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//span[@data-icon="plus"]')
+                )
+            )
+            attach_button.click()
+            time.sleep(1)
+
+            # Localizar o input do tipo "file"
+            file_input = WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, '//*[@id="app"]/div/span[5]/div/ul/'
+                        'div/div/div[2]/li/div/input')
+                )
+            )
+
+            # Enviar o caminho do arquivo para o input
+            file_input.send_keys(file_path)
+            time.sleep(2)
+
+            # Localizar o botão de envio e clicar
+            send_button = WebDriverWait(driver, 30).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH,
+                        '//*[@id="app"]/div/div[3]/div/div[2]/div[2]/span/div/'
+                        'div/div/div[2]/div/div[2]/div[2]/div/div')
+                )
+            )
+            send_button.click()
+        except Exception as e:
+            print(f"Erro ao carregar o arquivo: {e}")
 
     def send_message(self):
         """Envio de mensagem para o WhatsApp"""
@@ -292,7 +265,7 @@ class WhatsAppMessageService:
         self.click_new_chat_button(driver)
 
         csv_path = self.message_data['csv_path']
-        
+
         if not os.path.exists(csv_path):
             print(f"Erro: O arquivo CSV não foi encontrado {csv_path}")
             return
@@ -300,24 +273,36 @@ class WhatsAppMessageService:
         with open(csv_path, newline='') as csvfile:
             csvreader = csv.reader(csvfile)
             next(csvreader)  # Ignorar cabeçalho
+            wait_time = 60
 
             for row in csvreader:
                 phone_number = row[0]
                 self.click_new_chat_button(driver)
-                self.enter_phone_number(driver, phone_number)
 
-                # Escrever a mensagem usando o dado de saudação
-                greeting_message = self.message_data['greeting']
-                conversion_message = self.message_data['conversion']
-                audio_message = self.message_data['audio']
-                img_media = self.message_data['media']
-                self.write_message(driver,
-                                   greeting_message,
-                                   conversion_message,
-                                   audio_message,
-                                   img_media)
-
-                print(f"Mensagem enviada para o número: {phone_number}")
-                time.sleep(60)
+                # Executar o bloco se o número for processado com sucesso
+                if self.enter_phone_number(driver, phone_number):
+                    try:
+                        # Escrever a mensagem usando os dados fornecidos
+                        greeting_message = self.message_data['greeting']
+                        conversion_message = self.message_data['conversion']
+                        audio_message = self.message_data['audio']
+                        img_media = self.message_data['media']
+                        self.write_message(
+                            driver,
+                            greeting_message,
+                            conversion_message,
+                            audio_message,
+                            img_media
+                        )
+                        # time.sleep(60)
+                        # Alternar o tempo de espera entre 60 e 120 segundos
+                        time.sleep(wait_time)
+                        wait_time = 120 if wait_time == 60 else 60  # Alternar
+                    except Exception as e:
+                        print(f"Erro ao processar: {phone_number}: {e}")
+                        time.sleep(5)
+                        continue  # Pular para o próximo número
+                else:
+                    print(f"Pulando o número: {phone_number}")
 
         driver.quit()
